@@ -61,6 +61,10 @@
     <ref id="doSomethingSimpleArrayWriter" class="com.ibm.jbatch.tck.artifacts.specialized.DoSomethingSimpleArrayWriter" />
     <ref id="doSomethingSimpleTimeArrayReader" class="com.ibm.jbatch.tck.artifacts.specialized.DoSomethingSimpleTimeArrayReader" />
     <ref id="doSomethingSimpleTimeArrayWriter" class="com.ibm.jbatch.tck.artifacts.specialized.DoSomethingSimpleTimeArrayWriter" />
+    <ref id="stepExitStatusBatchlet" class="com.ibm.jbatch.tck.artifacts.specialized.StepExitStatusBatchlet" />
+    <ref id="stepContextAfterStepListener" class="com.ibm.jbatch.tck.artifacts.specialized.StepContextAfterStepListener" />
+    <ref id="jobExitStatusBatchlet" class="com.ibm.jbatch.tck.artifacts.specialized.JobExitStatusBatchlet" />
+    <ref id="jobContextAfterJobListener" class="com.ibm.jbatch.tck.artifacts.specialized.JobContextAfterJobListener" />
     <ref id="failRestartBatchlet" class="com.ibm.jbatch.tck.artifacts.specialized.FailRestartBatchlet" />
     <ref id="flowTransitionToDecisionTestBatchlet" class="com.ibm.jbatch.tck.artifacts.specialized.FlowTransitionToDecisionTestBatchlet" />
     <ref id="flowTransitionToDecisionTestDecider" class="com.ibm.jbatch.tck.artifacts.specialized.FlowTransitionToDecisionTestDecider" />
