@@ -27,6 +27,8 @@ import com.ibm.jbatch.tck.ann.*;
 import com.ibm.jbatch.tck.artifacts.specialized.StepExitStatusBatchlet;
 import com.ibm.jbatch.tck.artifacts.specialized.JobContextAfterJobListener;
 import com.ibm.jbatch.tck.artifacts.specialized.JobExitStatusBatchlet;
+import com.ibm.jbatch.tck.artifacts.specialized.SetExitStatusAfterJobListener;
+import com.ibm.jbatch.tck.artifacts.specialized.SetExitStatusAfterStepListener;
 import com.ibm.jbatch.tck.artifacts.specialized.StepContextAfterStepListener;
 import com.ibm.jbatch.tck.utils.JobOperatorBridge;
 
@@ -263,7 +265,116 @@ public class ExitStatusTests {
         } catch (Exception e) {
             handleException(METHOD, e);
         }
+    }
+
+    @TCKTest(
+        versions = {"1.0"},
+        assertions = {"It is not too late to set the Step ExitStatus from the scope of StepListener.afterStep()."},
+        specRefs = {
+           	@SpecRef(
+           		version = "1.0", section = "8.7.1", 
+           		citations="Step exit status may be set by any batch artifact configured to the step by invoking the exit status setter method in the StepContext object.",
+           		notes="StepListener is a batch artifact configured to a step, so it may set the exit status, even from the scope of afterStep()."
+           	)
+        },
+        apiRefs = {
+        	@APIRef(className = "javax.batch.runtime.context.StepContext", methodNames = "setExitStatus")
+        },
+        strategy = "Set the step ES via stepCtx.setExitStatus() from the scope of the batchlet. In StepListener.afterStep(), make "
+        		 + "another call to stepCtx.setExitStatus(). Verify that the final step ES is the value set from afterStep()."
+    )
+    @Test
+    @org.junit.Test
+    public void testAfterStepSetExitStatusToNonNull() throws Exception {
+        String METHOD = "testAfterStepSetExitStatusToNonNull";
+                        
+        try {
+            Reporter.log("Create job parameters for execution #1:<p>");
+            Reporter.log("set.step.exit.status=SET_STEP_EXIT_STATUS<p>");
+            Reporter.log("expected.step.exit.status=SET_STEP_EXIT_STATUS<p>");
+            Reporter.log("set.step.exit.status.after.step=SET_STEP_EXIT_STATUS_AFTER_STEP");
+                           
+            Properties jobParams = new Properties();            
+            jobParams.put("set.step.exit.status", StepExitStatusBatchlet.SET_STEP_EXIT_STATUS);
+            jobParams.put("expected.step.exit.status", StepExitStatusBatchlet.SET_STEP_EXIT_STATUS);
+            jobParams.put("set.step.exit.status.after.step", SetExitStatusAfterStepListener.SET_STEP_EXIT_STATUS_AFTER_STEP);
+
+            Reporter.log("Locate job XML file: setExitStatusAfterStepTest.xml<p>");
+            Reporter.log("Invoke startJobAndWaitForResult for execution #1<p>");
+                           
+            JobExecution execution1 = jobOp.startJobAndWaitForResult("setExitStatusAfterStepTest", jobParams);
+                          
+            //Assertion 1: We expect that the Step ExitStatus will be the value set by StepContext.setExitStatus() from the scope of afterStep()
+            String stepExitStatus = jobOp.getStepExecutions(execution1.getExecutionId()).get(0).getExitStatus();
+            assertWithMessage("The Step Execution's ExitStatus is incorrect", SetExitStatusAfterStepListener.SET_STEP_EXIT_STATUS_AFTER_STEP, stepExitStatus);
+                                
+            //Assertion 2: We expect the Job to COMPLETE
+            //  (This will expose any unexpected exceptions that might have been thrown during job execution)
+            assertWithMessage("The Job Execution's BatchStatus is incorrect", BatchStatus.COMPLETED, execution1.getBatchStatus());
+                            
+        } catch (Exception e) {
+            handleException(METHOD, e);
+        }
     }    
+    
+    @TCKTest(
+        versions = {"1.0"},
+        assertions = {
+        	"It is not too late to set the Step ExitStatus from the scope of StepListener.afterStep().",
+        	"A call to StepContext.setExitStatus(null) resets the ExitStatus to null."
+        },
+        specRefs = {
+           	@SpecRef(
+           		version = "1.0", section = "8.7.1", 
+           		citations="Step exit status may be set by any batch artifact configured to the step by invoking the exit status setter method in the StepContext object.",
+           		notes="StepListener is a batch artifact configured to a step, so it may set the exit status, even from the scope of afterStep()."
+           	),
+           	@SpecRef(
+           		version = "1.0", section = "10.9.2",
+           		citations="If setExitStatus was not called or was called with a null value, then the exit status defaults to the batch status of the step.",
+           		notes = "API for javax.batch.runtime.context.StepContext")
+        },
+        apiRefs = {
+        	@APIRef(className = "javax.batch.runtime.context.StepContext", methodNames = "setExitStatus")
+        },
+        strategy = "Set the step ES via stepCtx.setExitStatus() from the scope of the batchlet. In StepListener.afterStep(), make "
+        		 + "a call to stepCtx.setExitStatus(null). Verify that the final step ES defaults to the BatchStatus."
+    )
+    @Test
+    @org.junit.Test
+    public void testAfterStepSetExitStatusToNull() throws Exception {
+        String METHOD = "testAfterStepSetExitStatusToNull";
+                    
+        try {
+            Reporter.log("Create job parameters for execution #1:<p>");
+            Reporter.log("set.step.exit.status=SET_STEP_EXIT_STATUS<p>");
+            Reporter.log("expected.step.exit.status=SET_STEP_EXIT_STATUS<p>");
+            Reporter.log("set.step.exit.status.after.step=SET_STEP_EXIT_STATUS_AFTER_STEP_NULL");
+                       
+            Properties jobParams = new Properties();            
+            jobParams.put("set.step.exit.status", StepExitStatusBatchlet.SET_STEP_EXIT_STATUS);
+            jobParams.put("expected.step.exit.status", StepExitStatusBatchlet.SET_STEP_EXIT_STATUS);
+            jobParams.put("set.step.exit.status.after.step", SetExitStatusAfterStepListener.SET_STEP_EXIT_STATUS_AFTER_STEP_NULL);
+
+            Reporter.log("Locate job XML file: setExitStatusAfterStepTest.xml<p>");
+            Reporter.log("Invoke startJobAndWaitForResult for execution #1<p>");
+                       
+            JobExecution execution1 = jobOp.startJobAndWaitForResult("setExitStatusAfterStepTest", jobParams);
+                      
+            //Assertion 1: We expect that the Step ExitStatus will be the String version of the BatchStatus
+            //  (a null Step ExitStatus should default to the BatchStatus if all batch artifacts have completed execution)
+            String stepExitStatus = jobOp.getStepExecutions(execution1.getExecutionId()).get(0).getExitStatus();
+            String stepBatchStatus = jobOp.getStepExecutions(execution1.getExecutionId()).get(0).getBatchStatus().toString();
+            assertWithMessage("The Step Execution's ExitStatus is incorrect", stepBatchStatus, stepExitStatus);
+                            
+            //Assertion 2: We expect the Job to COMPLETE
+            //  (This will expose any unexpected exceptions that might have been thrown during job execution)
+            assertWithMessage("The Job Execution's BatchStatus is incorrect", BatchStatus.COMPLETED, execution1.getBatchStatus());
+                        
+        } catch (Exception e) {
+            handleException(METHOD, e);
+        }
+    }
     
     @TCKTest(
         versions = {"1.0"},
@@ -359,6 +470,115 @@ public class ExitStatusTests {
             //  (The job is set up to throw an exception and fail if the wrong Job ExitStatus value is seen by JobListener.AfterJob())
             //  (This will also expose any other unexpected exceptions that might have been thrown during job execution)
             assertWithMessage("The Job Execution's BatchStatus is incorrect", BatchStatus.COMPLETED, execution1.getBatchStatus());
+        } catch (Exception e) {
+            handleException(METHOD, e);
+        }
+    }
+
+    @TCKTest(
+        versions = {"1.0"},
+        assertions = {"It is not too late to set the Job ExitStatus from the scope of JobListener.afterJob()."},
+        specRefs = {
+           	@SpecRef(
+           		version = "1.0", section = "8.7", 
+           		citations="Exit status can be overridden by any artifact by invoking the exit status setter method on the JobContext object.",
+           		notes="JobListener is a batch artifact, so it may set the exit status, even from the scope of afterJob()."
+           	)
+        },
+        apiRefs = {
+        	@APIRef(className = "javax.batch.runtime.context.JobContext", methodNames = "setExitStatus")
+        },
+        strategy = "Set the job ES via jobCtx.setExitStatus() from the scope of the batchlet. In JobListener.afterJob(), make "
+        		 + "another call to jobCtx.setExitStatus(). Verify that the final job ES is the value set from afterJob()."
+    )
+    @Test
+    @org.junit.Test
+    public void testAfterJobSetExitStatusToNonNull() throws Exception {
+        String METHOD = "testAfterJobSetExitStatusToNonNull";
+                            
+        try {
+            Reporter.log("Create job parameters for execution #1:<p>");
+            Reporter.log("set.job.exit.status=SET_JOB_EXIT_STATUS<p>");
+            Reporter.log("expected.job.exit.status=SET_JOB_EXIT_STATUS<p>");
+            Reporter.log("set.job.exit.status.after.job=SET_JOB_EXIT_STATUS_AFTER_JOB");
+                               
+            Properties jobParams = new Properties();            
+            jobParams.put("set.job.exit.status", JobExitStatusBatchlet.SET_JOB_EXIT_STATUS);
+            jobParams.put("expected.job.exit.status", JobExitStatusBatchlet.SET_JOB_EXIT_STATUS);
+            jobParams.put("set.job.exit.status.after.job", SetExitStatusAfterJobListener.SET_JOB_EXIT_STATUS_AFTER_JOB);
+
+            Reporter.log("Locate job XML file: setExitStatusAfterJobTest.xml<p>");
+            Reporter.log("Invoke startJobAndWaitForResult for execution #1<p>");
+                               
+            JobExecution execution1 = jobOp.startJobAndWaitForResult("setExitStatusAfterJobTest", jobParams);
+                              
+            //Assertion 1: We expect that the Job ExitStatus will be the value set by JobContext.setExitStatus() from the scope of afterJob()
+            String jobExitStatus = execution1.getExitStatus();
+            assertWithMessage("The Job Execution's ExitStatus is incorrect", SetExitStatusAfterJobListener.SET_JOB_EXIT_STATUS_AFTER_JOB, jobExitStatus);
+                                    
+            //Assertion 2: We expect the Job to COMPLETE
+            //  (This will expose any unexpected exceptions that might have been thrown during job execution)
+            assertWithMessage("The Job Execution's BatchStatus is incorrect", BatchStatus.COMPLETED, execution1.getBatchStatus());
+                                
+        } catch (Exception e) {
+            handleException(METHOD, e);
+        }
+    }    
+        
+    @TCKTest(
+        versions = {"1.0"},
+        assertions = {
+        	"It is not too late to set the Job ExitStatus from the scope of JobListener.afterJob().",
+        	"A call to JobContext.setExitStatus(null) resets the ExitStatus to null."
+        },
+        specRefs = {
+           	@SpecRef(
+           		version = "1.0", section = "8.7", 
+           		citations="Exit status can be overridden by any artifact by invoking the exit status setter method on the JobContext object.",
+           		notes="JobListener is a batch artifact, so it may set the exit status, even from the scope of afterJob()."
+           	),
+           	@SpecRef(
+           		version = "1.0", section = "10.9.1",
+           		citations="If setExitStatus was not called or was called with a null value, then the exit status defaults to the batch status of the job.",
+           		notes = "API for javax.batch.runtime.context.JobContext")
+        },
+        apiRefs = {
+        	@APIRef(className = "javax.batch.runtime.context.JobContext", methodNames = "setExitStatus")
+        },
+        strategy = "Set the job ES via jobCtx.setExitStatus() from the scope of the batchlet. In JobListener.afterJob(), make "
+        		 + "a call to jobCtx.setExitStatus(null). Verify that the final job ES defaults to the BatchStatus."
+    )
+    @Test
+    @org.junit.Test
+    public void testAfterJobSetExitStatusToNull() throws Exception {
+        String METHOD = "testAfterJobSetExitStatusToNull";
+                        
+        try {
+            Reporter.log("Create job parameters for execution #1:<p>");
+            Reporter.log("set.job.exit.status=SET_JOB_EXIT_STATUS<p>");
+            Reporter.log("expected.job.exit.status=SET_JOB_EXIT_STATUS<p>");
+            Reporter.log("set.job.exit.status.after.job=SET_JOB_EXIT_STATUS_AFTER_JOB_NULL");
+                           
+            Properties jobParams = new Properties();            
+            jobParams.put("set.job.exit.status", JobExitStatusBatchlet.SET_JOB_EXIT_STATUS);
+            jobParams.put("expected.job.exit.status", JobExitStatusBatchlet.SET_JOB_EXIT_STATUS);
+            jobParams.put("set.job.exit.status.after.job", SetExitStatusAfterJobListener.SET_JOB_EXIT_STATUS_AFTER_JOB_NULL);
+
+            Reporter.log("Locate job XML file: setExitStatusAfterJobTest.xml<p>");
+            Reporter.log("Invoke startJobAndWaitForResult for execution #1<p>");
+                           
+            JobExecution execution1 = jobOp.startJobAndWaitForResult("setExitStatusAfterJobTest", jobParams);
+                          
+            //Assertion 1: We expect that the Job ExitStatus will be the String version of the BatchStatus
+            //  (a null Job ExitStatus should default to the BatchStatus if all batch artifacts have completed execution)
+            String jobExitStatus = execution1.getExitStatus();
+            String jobBatchStatus = execution1.getBatchStatus().toString();
+            assertWithMessage("The Job Execution's ExitStatus is incorrect", jobBatchStatus, jobExitStatus);
+                                
+            //Assertion 2: We expect the Job to COMPLETE
+            //  (This will expose any unexpected exceptions that might have been thrown during job execution)
+            assertWithMessage("The Job Execution's BatchStatus is incorrect", BatchStatus.COMPLETED, execution1.getBatchStatus());
+                            
         } catch (Exception e) {
             handleException(METHOD, e);
         }
