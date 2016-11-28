@@ -28,12 +28,19 @@ public class StepExitStatusBatchlet extends AbstractBatchlet {
     StepContext stepCtx;
 
     @Inject    
+    @BatchProperty(name="throw.exception")
+    String throwException;
+    
+    @Inject    
     @BatchProperty(name="set.step.exit.status")
     String setStepExitStatus;
     
     @Inject    
     @BatchProperty(name="batchlet.return.value")
     String batchletReturnValue;
+    
+    public static final String THROW_EXCEPTION_IMMEDIATELY = "Immediately throw an exception in batchlet's process method";
+    public static final String THROW_EXCEPTION_DELAYED = "Throw an exception in batchlet's process method after allowing step exit status to be set";
     
     public static final String DO_NOT_SET_STEP_EXIT_STATUS = "Do not make a call to StepContext.setExitStatus()";
     public static final String SET_STEP_EXIT_STATUS = "Make a call to StepContext.setExitStatus(SET_STEP_EXIT_STATUS)";
@@ -44,6 +51,11 @@ public class StepExitStatusBatchlet extends AbstractBatchlet {
         
     @Override
     public String process() throws Exception {
+    	
+    	//Throw Exception Immediately
+    	if(throwException!=null && throwException.equals(THROW_EXCEPTION_IMMEDIATELY)){
+    		throw new Exception(THROW_EXCEPTION_IMMEDIATELY);
+    	}
     	
     	//StepContext.setExitStatus()
     	if(setStepExitStatus==null || setStepExitStatus.equals(DO_NOT_SET_STEP_EXIT_STATUS)){
@@ -57,6 +69,11 @@ public class StepExitStatusBatchlet extends AbstractBatchlet {
     	}
     	else{
     		throw new Exception("Jobs configured with StepExitStatusBatchlet must inject one of the pre-defined constants for set.step.exit.status");
+    	}
+    	
+    	//Throw Exception Delayed
+    	if(throwException!=null && throwException.equals(THROW_EXCEPTION_DELAYED)){
+    		throw new Exception(THROW_EXCEPTION_DELAYED);
     	}
     	
     	//Batchet.process()

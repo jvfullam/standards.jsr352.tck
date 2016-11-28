@@ -28,6 +28,7 @@
 		<batchlet ref="stepExitStatusBatchlet">
 			<properties>
 				<property name="set.step.exit.status" value="#{jobParameters['set.step.exit.status']}"/>
+				<property name="throw.exception" value="#{jobParameters['throw.exception']}"/>
 			</properties>
 		</batchlet>
 	</step>

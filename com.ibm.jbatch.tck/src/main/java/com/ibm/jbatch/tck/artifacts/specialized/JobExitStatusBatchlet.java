@@ -28,15 +28,27 @@ public class JobExitStatusBatchlet extends AbstractBatchlet {
     JobContext jobCtx;
     
     @Inject    
+    @BatchProperty(name="throw.exception")
+    String throwException;
+    
+    @Inject    
     @BatchProperty(name="set.job.exit.status")
     String setJobExitStatus;
     
+    public static final String THROW_EXCEPTION_IMMEDIATELY = "Immediately throw an exception in batchlet's process method";
+    public static final String THROW_EXCEPTION_DELAYED = "Throw an exception in batchlet's process method after allowing job exit status to be set";
+        
     public static final String DO_NOT_SET_JOB_EXIT_STATUS = "Do not make a call to JobContext.setExitStatus()";
     public static final String SET_JOB_EXIT_STATUS = "Make a call to JobContext.setExitStatus(SET_JOB_EXIT_STATUS)";
     public static final String SET_JOB_EXIT_STATUS_NULL = "Explicitly make a call to JobContext.setExitStatus(null)";
         
     @Override
     public String process() throws Exception {
+    	
+    	//Throw Exception Immediately
+    	if(throwException!=null && throwException.equals(THROW_EXCEPTION_IMMEDIATELY)){
+    		throw new Exception(THROW_EXCEPTION_IMMEDIATELY);
+    	}
     	
     	//JobContext.setExitStatus()
     	if(setJobExitStatus==null || setJobExitStatus.equals(DO_NOT_SET_JOB_EXIT_STATUS)){
@@ -50,6 +62,11 @@ public class JobExitStatusBatchlet extends AbstractBatchlet {
     	}
     	else{
     		throw new Exception("Jobs configured with JobExitStatusBatchlet must inject one of the pre-defined constants for set.job.exit.status");
+    	}
+    	
+    	//Throw Exception Delayed
+    	if(throwException!=null && throwException.equals(THROW_EXCEPTION_DELAYED)){
+    		throw new Exception(THROW_EXCEPTION_DELAYED);
     	}
     	
     	return null;  
